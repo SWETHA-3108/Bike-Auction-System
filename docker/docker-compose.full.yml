@@ -1,0 +1,67 @@
+# Optional: run full stack locally with Docker
+# Usage: docker compose -f docker/docker-compose.full.yml up --build
+
+services:
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  api:
+    build:
+      context: ../backend
+      dockerfile: ../docker/Dockerfile.backend
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      MONGODB_URI: mongodb://mongo:27017/bike_auction
+      REDIS_URL: redis://redis:6379
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-access-secret-min-32-characters-long}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret-min-32-characters-long}
+      CORS_ORIGIN: http://localhost:5173
+      LOG_LEVEL: info
+    depends_on:
+      - mongo
+      - redis
+
+  worker:
+    build:
+      context: ../backend
+      dockerfile: ../docker/Dockerfile.worker
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: mongodb://mongo:27017/bike_auction
+      REDIS_URL: redis://redis:6379
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-access-secret-min-32-characters-long}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret-min-32-characters-long}
+      LOG_LEVEL: info
+    depends_on:
+      - mongo
+      - redis
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+      args:
+        VITE_API_URL: http://localhost:3001/v1
+        VITE_SOCKET_URL: http://localhost:3001
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+
+volumes:
+  mongo_data:
+  redis_data:

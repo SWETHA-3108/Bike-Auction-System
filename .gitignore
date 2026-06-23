@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+*.log
+.DS_Store
+coverage/
+.vscode/*
+!.vscode/extensions.json
+*.tsbuildinfo
+e2e/test-results/
+e2e/playwright-report/
+e2e/.data/
